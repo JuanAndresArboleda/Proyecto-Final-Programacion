@@ -2,6 +2,14 @@
 PRUEBAS
 
 cd C:\Users\juana\OneDrive\Escritorio\VideojuegoTaxi\proyecto_taxi
+rm -r _build
+rm -r deps
+
+mix deps.get
+mix compile
 elixir -S mix
-elixir -S mix deps.get
+
+
+
+
     
