@@ -1,18 +1,15 @@
-defmodule Taxi.Supervisor do
-  use Supervisor
+defmodule TaxiGame.TripSupervisor do
+  use DynamicSupervisor
 
-  def start_link(_opts) do
-    Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
+  def start_link(_args) do
+    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
   def init(:ok) do
-    children = [
-      {Taxi.UserManager, []},
-      {Taxi.Location, []},
-      {Taxi.Server, []},
-      {DynamicSupervisor, strategy: :one_for_one, name: Taxi.TripSupervisor}
-    ]
+    DynamicSupervisor.init(strategy: :one_for_one)
+  end
 
-    Supervisor.init(children, strategy: :one_for_one)
+  def start_trip(args) do
+    DynamicSupervisor.start_child(__MODULE__, {TaxiGame.Trip, args})
   end
 end

@@ -1,50 +1,69 @@
-defmodule Taxi.Location do
+defmodule TaxiGame.Location do
   use GenServer
-  @data_dir "data"
 
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  end
+  @file "data/locations.json"
 
-  def init(_) do
-    File.mkdir_p!(@data_dir)
-    locations = load_locations()
-    {:ok, locations}
-  end
+  # --------- API ---------
 
-  def valid_location?(loc) do
-    GenServer.call(__MODULE__, {:valid, loc})
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   def list_locations do
     GenServer.call(__MODULE__, :list)
   end
 
-  defp locations_file_path do
-    Path.join(@data_dir, "locations.dat")
+  def add_location(location) do
+    GenServer.call(__MODULE__, {:add, location})
   end
 
+  # --------- GEN SERVER ---------
+
+  @impl true
+  def init(_state) do
+    {:ok, load_locations()}
+  end
+
+  @impl true
+  def handle_call(:list, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call({:add, location}, _from, state) do
+    new_state = state ++ [location]
+    save_locations(new_state)
+    {:reply, :ok, new_state}
+  end
+
+  # --------- FILE I/O ---------
+
   defp load_locations do
-    file = locations_file_path()
+    # Asegura que la carpeta exista
+    File.mkdir_p!("data")
 
-    case File.read(file) do
-      {:ok, content} ->
-        content
-        |> String.split("\n", trim: true)
-        |> Enum.map(&String.trim/1)
+    # Si el archivo no existe, créalo con []
+    unless File.exists?(@file) do
+      File.write!(@file, "[]")
+    end
 
-      _ ->
-        default = ["Parque", "Centro", "Aeropuerto", "Estacion", "Barrio"]
-        File.write!(file, Enum.join(default, "\n"))
-        default
+    case File.read(@file) do
+      {:ok, content} when content != "" ->
+        case Jason.decode(content) do
+          {:ok, data} -> data
+          _ -> []
+        end
+
+      {:ok, ""} ->
+        []  # archivo vacío
+
+      {:error, reason} ->
+        IO.puts("Error leyendo archivo: #{inspect(reason)}")
+        []
     end
   end
 
-  def handle_call({:valid, loc}, _from, locations) do
-    {:reply, loc in locations, locations}
-  end
-
-  def handle_call(:list, _from, locations) do
-    {:reply, locations, locations}
+  defp save_locations(locations) do
+    File.write!(@file, Jason.encode!(locations, pretty: true))
   end
 end

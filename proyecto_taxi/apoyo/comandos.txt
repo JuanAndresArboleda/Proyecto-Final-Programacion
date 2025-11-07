@@ -1,22 +1,7 @@
-Para ejecutar el server (en mi caso):
-    cd C:\Users\esteb\OneDrive\Documentos\Codigos\ProyectoFinal\proyecto_taxi
-    mix deps.get
-    mix compile
-    iex --sname server -S mix
-        Taxi.CLI.start()
 
-Para ejecutar el cliente
-    cd C:\Users\esteb\OneDrive\Documentos\Codigos\ProyectoFinal\proyecto_taxi
-    iex --sname cliente1 -S mix
-        Node.connect(:"server@Esteban06yt")
-        Taxi.CLI.start()
-            connect Esteban06yt pass123 cliente
+PRUEBAS
 
-    cd C:\Users\esteb\OneDrive\Documentos\Codigos\ProyectoFinal\proyecto_taxi
-    iex --sname conductor1 -S mix
-        Node.connect(:"server@Esteban06yt")
-        Taxi.CLI.start()
-            connect Felipe pass321 conductor
-    
-    cd C:\Users\juana\OneDrive\Escritorio\ProyectoFinal\proyecto_taxi
+cd C:\Users\juana\OneDrive\Escritorio\VideojuegoTaxi\proyecto_taxi
+elixir -S mix
+elixir -S mix deps.get
     

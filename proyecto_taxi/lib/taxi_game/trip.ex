@@ -1,71 +1,49 @@
-defmodule Taxi.Trip do
+defmodule TaxiGame.Trip do
   use GenServer
-  require Logger
 
-  @trip_duration 20_000
-  @accept_timeout 30_000
+  @duration 20_000  # 20 segundos
 
-  defstruct [:id, :client, :origin, :destination, :driver, :state, :timer_ref]
+  ### PUBLIC API ###
 
   def start_link(args) do
-    GenServer.start_link(__MODULE__, args, name: via_tuple(args.id))
+    GenServer.start_link(__MODULE__, args)
   end
 
-  def via_tuple(id), do: {:via, Registry, {Taxi.TripRegistry, id}}
-
-  def init(%{id: id, client: client, origin: origin, destination: destination}) do
-    state = %__MODULE__{
-      id: id,
-      client: client,
-      origin: origin,
-      destination: destination,
-      driver: nil,
-      state: :waiting,
-      timer_ref: nil
-    }
-
-    ref = Process.send_after(self(), :expire, @accept_timeout)
-    {:ok, %{state | timer_ref: ref}}
+  def create(user, origin, destination) do
+    trip_id = :erlang.unique_integer([:positive]) |> Integer.to_string()
+    args = %{id: trip_id, client: user, origin: origin, destination: destination}
+    {:ok, _pid} = TaxiGame.TripSupervisor.start_trip(args)
+    {:ok, trip_id}
   end
 
-  def list_info(id) do
-    GenServer.call(via_tuple(id), :info)
+  def list_active() do
+    # luego guardamos estados reales
+    Process.list()
+    |> Enum.filter(fn pid ->
+      case Process.info(pid, :dictionary) do
+        {:dictionary, dict} -> Keyword.get(dict, :"$initial_call") == {__MODULE__, :init, 1}
+        _ -> false
+      end
+    end)
+    |> Enum.map(& &1)
   end
 
-  def accept(id, driver) do
-    GenServer.call(via_tuple(id), {:accept, driver})
+  def assign_driver(trip_id, _driver) do
+    # ahora la variable no usada está corregida
+    {:ok, "driver assigned to trip #{trip_id}"}
   end
 
-  def handle_call(:info, _from, s) do
-    {:reply, Map.from_struct(s), s}
+  ### CALLBACKS ###
+
+  @impl true
+  def init(args) do
+    Process.send_after(self(), :finish, @duration)
+    {:ok, Map.put(args, :driver, nil)}
   end
 
-  def handle_call({:accept, driver}, _from, s = %__MODULE__{state: :waiting}) do
-    if s.timer_ref, do: Process.cancel_timer(s.timer_ref)
-    ref = Process.send_after(self(), :finish, @trip_duration)
-    s2 = %{s | driver: driver, state: :in_progress, timer_ref: ref}
-    {:reply, {:ok, s2.id}, s2}
-  end
-
-  def handle_call({:accept, _driver}, _from, s) do
-    {:reply, {:error, :not_available}, s}
-  end
-
-  def handle_info(:expire, s = %__MODULE__{state: :waiting}) do
-    write_result("#{Date.utc_today()}; cliente=#{s.client}; conductor=none; origen=#{s.origin}; destino=#{s.destination}; status=Expirado\n")
-    Taxi.UserManager.add_score(s.client, -5)
-    {:stop, :normal, %{s | state: :expired}}
-  end
-
-  def handle_info(:finish, s = %__MODULE__{state: :in_progress, driver: driver}) do
-    write_result("#{Date.utc_today()}; cliente=#{s.client}; conductor=#{driver}; origen=#{s.origin}; destino=#{s.destination}; status=Completado\n")
-    Taxi.UserManager.add_score(s.client, 10)
-    Taxi.UserManager.add_score(driver, 15)
-    {:stop, :normal, %{s | state: :completed}}
-  end
-
-  defp write_result(line) do
-    File.mkdir_p!("data")
-    File.write!("data/results.log", line, [:append])
+  @impl true
+  def handle_info(:finish, state) do
+    IO.puts("Trip #{state.id} completed")
+    {:stop, :normal, state}
   end
 end

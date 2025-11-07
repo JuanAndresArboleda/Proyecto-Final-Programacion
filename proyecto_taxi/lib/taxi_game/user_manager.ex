@@ -1,104 +1,90 @@
-defmodule Taxi.UserManager do
+defmodule TaxiGame.UserManager do
   use GenServer
-  @users_file "data/users.dat"
 
+  @user_file "data/users.dat"
+
+  ## ===== Public API =====
   def start_link(_) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  def init(_) do
-    File.mkdir_p!("data")
+  def login_or_register(username, password) do
     users = load_users()
-    {:ok, users}
-  end
 
-  # API
-  def authenticate_or_register(username, role, password) do
-    GenServer.call(__MODULE__, {:auth_or_reg, username, role, password})
-  end
-
-  def add_score(username, delta) do
-    GenServer.call(__MODULE__, {:add_score, username, delta})
-  end
-
-  def get_score(username) do
-    GenServer.call(__MODULE__, {:get_score, username})
-  end
-
-  def ranking(limit \\ 10) do
-    GenServer.call(__MODULE__, {:ranking, limit})
-  end
-
-  def handle_call({:auth_or_reg, username, role, password}, _from, users) do
     case Map.get(users, username) do
       nil ->
-        user = %{username: username, role: role, password: password, score: 0}
-        users2 = Map.put(users, username, user)
-        persist_users(users2)
-        {:reply, {:ok, user}, users2}
+        # Nuevo usuario, rol definido automáticamente
+        role = ask_role(username)
+        save_user(username, password, role, 0)
+        {:ok, "Usuario #{username} registrado como #{role}"}
 
-      %{password: ^password} = user ->
-        {:reply, {:ok, user}, users}
+      %{password: ^password} ->
+        {:ok, "Login exitoso como #{users[username].role}"}
 
       _ ->
-        {:reply, {:error, :invalid_password}, users}
+        {:error, "Contraseña incorrecta"}
     end
   end
 
-  def handle_call({:add_score, username, delta}, _from, users) do
-    users2 =
-      update_in(users, [username], fn
-        nil -> nil
-        u -> Map.update!(u, :score, &(&1 + delta))
-      end)
-
-    persist_users(users2)
-    {:reply, :ok, users2}
+  def get_user(username) do
+    load_users()[username]
   end
 
-  def handle_call({:get_score, username}, _from, users) do
-    score = users |> Map.get(username) |> (fn u -> if u, do: u.score, else: nil end).()
-    {:reply, score, users}
+  def update_points(username, points) do
+    users = load_users()
+
+    case users[username] do
+      nil -> {:error, "Usuario no existe"}
+      user ->
+        new_score = user.points + points
+        save_user(username, user.password, user.role, new_score)
+        {:ok, new_score}
+    end
   end
 
-  def handle_call({:ranking, limit}, _from, users) do
-    top =
-      users
-      |> Map.values()
-      |> Enum.sort_by(& &1.score, :desc)
-      |> Enum.take(limit)
-
-    {:reply, top, users}
+  def leaderboard() do
+    load_users()
+    |> Map.values()
+    |> Enum.sort_by(& &1.points, :desc)
+    |> Enum.take(10)
   end
 
-  defp persist_users(users_map) do
-    lines =
-      users_map
-      |> Map.values()
-      |> Enum.map(fn u -> "#{u.username},#{u.role},#{u.password},#{u.score}\n" end)
-      |> Enum.join()
-
-    File.write!(@users_file, lines)
+  ## ===== GEN SERVER =====
+  @impl true
+  def init(_args) do
+    {:ok, %{}}
   end
+
+  ## ===== Internal File Logic =====
 
   defp load_users do
-    case File.read(@users_file) do
-      {:ok, content} ->
-        content
-        |> String.split("\n", trim: true)
-        |> Enum.reduce(%{}, fn line, acc ->
-          case String.split(line, ",") do
-            [username, role_s, password, score_s] ->
-              role = String.to_atom(role_s)
-              score = String.to_integer(score_s)
-              Map.put(acc, username, %{username: username, role: role, password: password, score: score})
+    File.mkdir_p!("data")
 
-            _ -> acc
-          end
-        end)
+    if !File.exists?(@user_file), do: File.write!(@user_file, "")
 
-      {:error, _} ->
-        %{}
-    end
+    @user_file
+    |> File.read!()
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn line ->
+      [u, p, r, pts] = String.split(line, "|")
+      {u, %{password: p, role: r, points: String.to_integer(pts)}}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp save_user(username, password, role, points) do
+    users = load_users() |> Map.put(username, %{password: password, role: role, points: points})
+
+    users
+    |> Enum.map(fn {u, data} ->
+      "#{u}|#{data.password}|#{data.role}|#{data.points}"
+    end)
+    |> Enum.join("\n")
+    |> then(&File.write!(@user_file, &1))
+  end
+
+  defp ask_role(username) do
+    # default role logic
+    if String.contains?(username, "driver"), do: "conductor", else: "cliente"
   end
 end
