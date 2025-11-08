@@ -1,7 +1,6 @@
 
 PRUEBAS
-
-cd C:\Users\juana\OneDrive\Escritorio\VideojuegoTaxi\proyecto_taxi
+cd C:\Proyectos\VideojuegoTaxi\proyecto_taxi
 rm -r _build
 rm -r deps
 

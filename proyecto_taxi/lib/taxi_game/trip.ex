@@ -2,64 +2,52 @@ defmodule TaxiGame.Trip do
   use GenServer
 
   @file "data/trips.json"
-  @duration 20_000
 
-  def start_link(args), do: GenServer.start_link(__MODULE__, args)
-  def list_trips, do: load_data()
+  def start_link(_opts), do: GenServer.start_link(__MODULE__, [], name: __MODULE__)
 
-  def create(user, origin, destination) do
-    id = :erlang.unique_integer([:positive]) |> Integer.to_string()
-    trip = %{id: id, user: user, origin: origin, destination: destination, driver: nil, status: "active"}
+  def create(user, origin, destination),
+    do: GenServer.call(__MODULE__, {:create, user, origin, destination})
 
-    data = load_data()
-    save_data(data ++ [trip])
+  def list_trips(), do: GenServer.call(__MODULE__, :list)
 
-    GenServer.start_link(__MODULE__, trip)
+  def assign_driver(trip_id, driver),
+    do: GenServer.call(__MODULE__, {:assign, trip_id, driver})
 
-    {:ok, id}
+  def init(_) do
+    ensure_file_exists()
+    {:ok, load_data()}
   end
 
-  def assign_driver(id, driver) do
-    trips = load_data()
+  def handle_call(:list, _from, state), do: {:reply, state, state}
 
-    updated =
-      Enum.map(trips, fn t ->
-        if t.id == id, do: %{t | driver: driver, status: "assigned"}, else: t
+  def handle_call({:create, user, origin, destination}, _from, trips) do
+    id = System.unique_integer([:positive])
+    new_trip = %{id: id, user: user, origin: origin, destination: destination, driver: nil}
+    new_state = trips ++ [new_trip]
+    save_data(new_state)
+    {:reply, {:ok, id}, new_state}
+  end
+
+  def handle_call({:assign, id, driver}, _from, state) do
+    new_state =
+      Enum.map(state, fn trip ->
+        if trip.id == id, do: %{trip | driver: driver}, else: trip
       end)
 
-    save_data(updated)
-    {:ok, "Driver asignado a viaje #{id}"}
+    save_data(new_state)
+    {:reply, :ok, new_state}
   end
 
-  # Callbacks
-  def init(trip) do
-    Process.send_after(self(), :finish, @duration)
-    {:ok, trip}
-  end
-
-  def handle_info(:finish, state) do
-    trips = load_data()
-
-    updated =
-      Enum.map(trips, fn t ->
-        if t.id == state.id, do: %{t | status: "completed"}, else: t
-      end)
-
-    save_data(updated)
-    {:stop, :normal, state}
-  end
-
-  # JSON helpers
-  defp load_data do
+  defp ensure_file_exists, do:
     unless File.exists?(@file), do: File.write!(@file, "[]")
 
-    case File.read(@file) do
-      {:ok, content} when content != "" -> Jason.decode!(content)
-      _ -> []
-    end
+  defp load_data do
+    {:ok, content} = File.read(@file)
+    Jason.decode!(content)
+  rescue
+    _ -> []
   end
 
-  defp save_data(data) do
-    File.write!(@file, Jason.encode!(data, pretty: true))
-  end
+  defp save_data(data),
+    do: File.write!(@file, Jason.encode!(data, pretty: true))
 end
