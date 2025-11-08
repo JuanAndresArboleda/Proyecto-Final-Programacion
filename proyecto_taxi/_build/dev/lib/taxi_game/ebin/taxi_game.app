@@ -1,1 +1,12 @@
-{application,taxi_game,[{modules,['Elixir.TaxiGame.Application','Elixir.TaxiGame.Location','Elixir.TaxiGame.Server','Elixir.TaxiGame.Trip','Elixir.TaxiGame.TripSupervisor','Elixir.TaxiGame.UserManager']},{optional_applications,[]},{applications,[kernel,stdlib,elixir,logger,jason]},{description,[116,97,120,105,95,103,97,109,101]},{registered,[]},{vsn,[48,46,49,46,48]},{mod,{'Elixir.TaxiGame.Application',[]}}]}.
+{application,taxi_game,
+             [{modules,['Elixir.TaxiGame.Application','Elixir.TaxiGame.CLI',
+                        'Elixir.TaxiGame.Game','Elixir.TaxiGame.Location',
+                        'Elixir.TaxiGame.Server','Elixir.TaxiGame.Trip',
+                        'Elixir.TaxiGame.TripSupervisor',
+                        'Elixir.TaxiGame.UserManager']},
+              {optional_applications,[]},
+              {applications,[kernel,stdlib,elixir,logger,jason]},
+              {description,"taxi_game"},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.TaxiGame.Application',[]}}]}.

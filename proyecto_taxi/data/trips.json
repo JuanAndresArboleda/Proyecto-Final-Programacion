@@ -1,0 +1,20 @@
+[
+  {
+    "driver": "Fernely",
+    "id": 1603,
+    "status": "completado",
+    "user": "Esteban",
+    "origin": "Centro",
+    "destination": "Aeropuerto",
+    "duration": 19
+  },
+  {
+    "driver": "Fernely",
+    "id": 1667,
+    "status": "completado",
+    "user": "Andres",
+    "origin": "Centro",
+    "destination": "Uniquindio",
+    "duration": 11
+  }
+]

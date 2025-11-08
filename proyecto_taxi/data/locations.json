@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Centro",
+    "x": 10,
+    "y": 20
+  },
+  {
+    "name": "Aeropuerto",
+    "x": 100,
+    "y": 200
+  },
+  {
+    "name": "Uniquindio",
+    "x": 900,
+    "y": 1000
+  }
+]

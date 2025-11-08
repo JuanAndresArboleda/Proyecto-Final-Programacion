@@ -1,13 +1,56 @@
 
 PRUEBAS
 cd C:\Proyectos\VideojuegoTaxi\proyecto_taxi
-
 rm -r _build        // opcional
 rm -r deps         // opcional
 
 mix deps.get
 mix compile
 elixir -S mix
+
+cd "C:\Users\Del Castillo\Documents\ProyectoFinalProgra III\Proyecto-Final-Programacion\proyecto_taxi"
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+mix deps.get
+mix compile
+iex -S mix
+# Iniciar el Trip
+{:ok, _} = TaxiGame.Trip.start_link([])
+
+# Crear usuarios
+TaxiGame.UserManager.add_user("Fernely", %{role: "driver"})
+TaxiGame.UserManager.add_user("Esteban", %{role: "passenger"})
+
+
+# Listar usuarios
+IO.inspect(TaxiGame.UserManager.list_users(), label: "Usuarios registrados")
+
+# Crear ubicaciones
+TaxiGame.Location.add_location(%{name: "Centro", x: 10, y: 20})
+TaxiGame.Location.add_location(%{name: "Aeropuerto", x: 100, y: 200})
+
+# Listar ubicaciones
+IO.inspect(TaxiGame.Location.list_locations(), label: "Ubicaciones registradas")
+
+# Crear viaje
+{:ok, id} = TaxiGame.Trip.create("Esteban", "Centro", "Aeropuerto")
+
+# Listar viajes
+IO.inspect(TaxiGame.Trip.list_trips(), label: "Viajes antes de asignar conductor")
+
+# Asignar conductor
+:ok = TaxiGame.Trip.assign_driver(id, "Fernely")
+
+# Listar viajes
+IO.inspect(TaxiGame.Trip.list_trips(), label: "Viajes después de asignar conductor")
+
+# Completar viaje
+:ok = TaxiGame.Trip.complete_trip(id)
+
+# Listar viajes
+IO.inspect(TaxiGame.Trip.list_trips(), label: "Viajes después de completar viaje")
+
+# Iniciar CLI
+TaxiGame.CLI.start()
 
 
 
