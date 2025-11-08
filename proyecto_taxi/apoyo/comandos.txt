@@ -1,8 +1,9 @@
 
 PRUEBAS
 cd C:\Proyectos\VideojuegoTaxi\proyecto_taxi
-rm -r _build
-rm -r deps
+
+rm -r _build        // opcional
+rm -r deps         // opcional
 
 mix deps.get
 mix compile
