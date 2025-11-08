@@ -1,7 +1,7 @@
 defmodule TaxiGame.UserManager do
   use GenServer
 
-  @file "data/users.json"
+  @file Path.join(:code.priv_dir(:taxi_game), "users.json")
 
   def start_link(_opts),
     do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
@@ -47,8 +47,11 @@ defmodule TaxiGame.UserManager do
     end
   end
 
-  defp ensure_file_exists, do:
-    unless File.exists?(@file), do: File.write!(@file, "{}")
+  defp ensure_file_exists do
+    unless File.exists?(@file) do
+      File.write!(@file, "{}")
+    end
+  end
 
   defp load_data do
     {:ok, content} = File.read(@file)
@@ -57,6 +60,7 @@ defmodule TaxiGame.UserManager do
     _ -> %{}
   end
 
-  defp save_data(data),
-    do: File.write!(@file, Jason.encode!(data, pretty: true))
+  defp save_data(data) do
+    File.write!(@file, Jason.encode!(data, pretty: true))
+  end
 end

@@ -1,7 +1,7 @@
 defmodule TaxiGame.Trip do
   use GenServer
 
-  @file "data/trips.json"
+  @file Path.join(:code.priv_dir(:taxi_game), "trips.json")
 
   def start_link(_opts), do: GenServer.start_link(__MODULE__, [], name: __MODULE__)
 
@@ -38,8 +38,11 @@ defmodule TaxiGame.Trip do
     {:reply, :ok, new_state}
   end
 
-  defp ensure_file_exists, do:
-    unless File.exists?(@file), do: File.write!(@file, "[]")
+  defp ensure_file_exists do
+    unless File.exists?(@file) do
+      File.write!(@file, "[]")
+    end
+  end
 
   defp load_data do
     {:ok, content} = File.read(@file)
@@ -48,6 +51,7 @@ defmodule TaxiGame.Trip do
     _ -> []
   end
 
-  defp save_data(data),
-    do: File.write!(@file, Jason.encode!(data, pretty: true))
+  defp save_data(data) do
+    File.write!(@file, Jason.encode!(data, pretty: true))
+  end
 end

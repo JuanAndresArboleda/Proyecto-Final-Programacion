@@ -1,12 +1,11 @@
 defmodule TaxiGame.Location do
   use GenServer
 
-  @file "data/locations.json"
+  @file Path.join(:code.priv_dir(:taxi_game), "locations.json")
 
   def start_link(_opts), do: GenServer.start_link(__MODULE__, [], name: __MODULE__)
 
   def list_locations, do: GenServer.call(__MODULE__, :list)
-
   def add_location(location), do: GenServer.call(__MODULE__, {:add, location})
 
   def init(_) do
@@ -22,8 +21,11 @@ defmodule TaxiGame.Location do
     {:reply, :ok, new_state}
   end
 
-  defp ensure_file_exists, do:
-    unless File.exists?(@file), do: File.write!(@file, "[]")
+  defp ensure_file_exists do
+    unless File.exists?(@file) do
+      File.write!(@file, "[]")
+    end
+  end
 
   defp load_data do
     {:ok, content} = File.read(@file)
@@ -32,6 +34,7 @@ defmodule TaxiGame.Location do
     _ -> []
   end
 
-  defp save_data(data),
-    do: File.write!(@file, Jason.encode!(data, pretty: true))
+  defp save_data(data) do
+    File.write!(@file, Jason.encode!(data, pretty: true))
+  end
 end
